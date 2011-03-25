@@ -2,14 +2,16 @@ import qualified Data.Map as Map
 import Data.Map(Map)
 import Graphics.Gloss.Interface.Game
 import Graphics.Gloss.Data.Picture
+import Graphics.Gloss.Data.Vector
 import RigidBody
+import Vector
 
 data World = World (Map Index RigidBody)
 instance Show World where
   show (World bodies) = "{World " ++ show (Map.size bodies) ++ "}"
 
--- todo: use StateMonad to give indices to bodies
-
+-- todo: use StateMonad to give indices to bodies. this manual assignment
+-- of indices is becoming a real mess throughout all the code.
 
 --config
 windowSize = (600, 600)
@@ -17,13 +19,15 @@ simResolution = 600 -- fps
 
 -- | The initial world
 worldInit :: World
-worldInit = World $ Map.union (ballInit 30) rulers
+worldInit = World $ Map.unions [(ballInit 30), rulers, hexagon]
 
 bodiesListToMap :: [RigidBody] -> Map Index RigidBody
 bodiesListToMap = Map.fromList . (map (\a -> (index a, a)))
 
-ballInit m = bodiesListToMap $ map (makeBall m) [0..m]
+-- todo: 1. split all of these models out of the main module.
+--       2. do it without breaking them.
 
+ballInit m = bodiesListToMap $ map (makeBall m) [0..m]
 makeBall m n = dynamic { shape = color bodyColor (ThickCircle 5 8)
                          , mass = 5
                          , position = pos
@@ -47,6 +51,13 @@ rulers = bodiesListToMap [static {position = (0,370), index = 100, shape = rotat
                          ,static {position = (-615,0), index = 102, shape = rotate 90 (makeRuler 700 50)}
                          ,static {position = (615,0), index = 103, shape = rotate 270 (makeRuler 700 50)}
                          ]
+
+regularPolygon n r
+  | n < 3 = Line [(0,0),(r,r)]
+  | otherwise = Polygon $ map createVertex [0..n]
+    where createVertex p = r <*> unitVectorAtAngle (p*pi*2/n)
+makeHexagon = color (dim red) $ regularPolygon 6 40
+hexagon = bodiesListToMap $ [ static { shape = makeHexagon, index = 123 } ]
 
 main = do
   putStrLn "Starting"

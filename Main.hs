@@ -8,13 +8,12 @@ data World = World (Map Index RigidBody)
 instance Show World where
   show (World bodies) = "{World " ++ show (Map.size bodies) ++ "}"
 
--- todo: use statemonad to give indices to bodies
+-- todo: use StateMonad to give indices to bodies
 
 
 --config
 windowSize = (600, 600)
 simResolution = 600 -- fps
-gravity = -980 / 2 -- gravity constant
 
 -- | The initial world
 worldInit :: World
@@ -80,6 +79,8 @@ advanceWorld :: ViewPort -- ^ current viewport
                 -> World -- ^ the new world.
 advanceWorld viewport time (World bodies)
   = let
-  outsideForces = [(0, gravity)]
+  outsideForces = [gravity, wind]
+    where gravity = (0, -980 / 2) -- gravity constant
+          wind = (30,0) -- apparently the wind is blowing to +x-axis
   moved_bodies = Map.map (applyForces time outsideForces) bodies
   in World moved_bodies

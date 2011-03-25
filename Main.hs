@@ -18,18 +18,20 @@ gravity = -980 / 2 -- gravity constant
 
 -- | The initial world
 worldInit :: World
-worldInit = World $ Map.union (ballInit 10) rulers
+worldInit = World $ Map.union (ballInit 30) rulers
 
 bodiesListToMap :: [RigidBody] -> Map Index RigidBody
 bodiesListToMap = Map.fromList . (map (\a -> (index a, a)))
 
-ballInit m = bodiesListToMap $ map ball [1..m]
-  where ball n = dynamic { shape = color bodyColor (ThickCircle 10 30)
+ballInit m = bodiesListToMap $ map (makeBall m) [0..m]
+
+makeBall m n = dynamic { shape = color bodyColor (ThickCircle 5 8)
                          , mass = 5
                          , position = pos
-                         , index = floor n
+                         , index = floor n+14000
                          }
-          where pos = (-m/2*100 + n*100, 200)  -- (-550 + n*100, 200)
+          where pos = (-m/2*spacer + n*spacer, 200) -- centered, spaced out
+                spacer = 1150 / m
 
 rulerColor = makeColor8 240 240 177 255
 lineColor = red

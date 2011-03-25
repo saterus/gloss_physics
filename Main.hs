@@ -10,26 +10,42 @@ instance Show World where
 
 -- todo: use statemonad to give indices to bodies
 
+
 --config
 windowSize = (600, 600)
 simResolution = 600 -- fps
-gravity = -980 -- gravity constant
+gravity = -980 / 2 -- gravity constant
 
 -- | The initial world
 worldInit :: World
-worldInit = World $ Map.union ballInit ground
+worldInit = World $ Map.union (ballInit 10) rulers
 
 bodiesListToMap :: [RigidBody] -> Map Index RigidBody
 bodiesListToMap = Map.fromList . (map (\a -> (index a, a)))
 
-ballInit = bodiesListToMap $ [ dynamic { shape = ThickCircle 10 40, mass = 5, position = (0,30), index = 1 } ]
+ballInit m = bodiesListToMap $ map ball [1..m]
+  where ball n = dynamic { shape = color bodyColor (ThickCircle 10 30)
+                         , mass = 5
+                         , position = pos
+                         , index = floor n
+                         }
+          where pos = (-m/2*100 + n*100, 200)  -- (-550 + n*100, 200)
 
-ground = bodiesListToMap $ [ static { position = (0,-350), shape = box 1000 30 } ]
-  where box w h = Polygon $ [ (-w/2, -h/2) -- bottom-left
-                            , (-w/2,  h/2) -- top-left
-                            , ( w/2,  h/2) -- top-right
-                            , ( w/2, -h/2) -- bottom-right
-                            ]
+rulerColor = makeColor8 240 240 177 255
+lineColor = red
+
+makeRuler w h = Pictures ( [ color rulerColor (rectangleSolid w h) ] ++ rulerLines )
+  where rulerLines = map line [-w/2,-w/2+10..w/2]
+        line x
+          | (round x) `mod` 100 == 0 = color lineColor (Line [(x, -h/2), (x, h/2)])
+          | (round x) `mod` 50  == 0 = color lineColor (Line [(x, -h/2), (x,   0)])
+          | otherwise                = color lineColor (Line [(x, -h/2), (x,-h/4)])
+
+rulers = bodiesListToMap [static {position = (0,370), index = 100, shape = rotate 180 (makeRuler 1400 50)}
+                         ,static {position = (0,-370), index = 101, shape = (makeRuler 1400 50)}
+                         ,static {position = (-615,0), index = 102, shape = rotate 90 (makeRuler 700 50)}
+                         ,static {position = (615,0), index = 103, shape = rotate 270 (makeRuler 700 50)}
+                         ]
 
 main = do
   putStrLn "Starting"
@@ -50,8 +66,7 @@ main = do
 bodyColor = makeColor 0.5 0.5 1.0 1.0
 
 drawWorld :: World -> Picture
-drawWorld (World bodies) = Color bodyColor $ Pictures $
-                           map drawBody (Map.elems bodies)
+drawWorld (World bodies) = Pictures $ map drawBody (Map.elems bodies)
   where drawBody b = let
           (px, py) = position b
           in
